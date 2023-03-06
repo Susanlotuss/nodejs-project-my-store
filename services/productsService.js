@@ -1,4 +1,5 @@
 const faker = require('faker');
+const boom = require('@hapi/boom');
 
 // Programación orientada a objetos
 
@@ -16,45 +17,59 @@ class ProductsService {
         name: faker.commerce.productName(),
         price: parseInt(faker.commerce.price(), 10),
         image: faker.image.imageUrl(),
+        isBlock: faker.datatype.boolean(),
       });
     }
   }
 
-  create(data) {
+  async create(data) {
     const newProduct = {
       id: faker.datatype.uuid(),
-      ...data
-    }
+      ...data,
+    };
     this.products.push(newProduct);
     return newProduct;
   }
 
-  find() {
+  async find() {
     return this.products;
   }
 
-  findOne(id) {
+  /* CAPTURANDO ERROR CON MIDDLEWARE -------
+  async findOne(id) {
+    const name = this.getTotal();
     return this.products.find(item => item.id === id)
+  } ----------*/
+
+  async findOne(id) {
+    const product = this.products.find((item) => item.id === id);
+    if (!product) {
+      throw boom.notFound('product not found');
+    }
+    if (product.isBlock) {
+      throw boom.conflict('product is block');
+    }
+    return product;
   }
 
-  update(id, changes) {
-    const index = this.products.findIndex(item => item.id === id);
+  async update(id, changes) {
+    const index = this.products.findIndex((item) => item.id === id);
     if (index === -1) {
-      throw new Error('Product not found')
+      throw boom.notFound('Product not found');
     }
     const product = this.products[index];
     // Esta parte es importante para evitar modificar completamente el objeto. (-this.products[index] = change- lo cambiaría por completo)
     this.products[index] = {
       ...product,
-      ...changes
-    }
-    return this.products[index]
+      ...changes,
+    };
+    return this.products[index];
   }
 
-  delete(id) {
-    const index = this.products.findIndex(item => item.id === id);
+  async delete(id) {
+    const index = this.products.findIndex((item) => item.id === id);
     if (index === -1) {
-      throw new Error('Product not found')
+      throw boom.notFound('Product not found');
     }
     this.products.splice(index, 1);
     return { id };

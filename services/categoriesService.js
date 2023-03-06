@@ -1,4 +1,5 @@
 const faker = require('faker');
+const boom = require('@hapi/boom')
 
 // Programación orientada a objetos
 
@@ -13,12 +14,13 @@ class CategoriesService {
     for (let index = 0; index < limit; index++) {
       this.category.push({
         id: faker.datatype.uuid(),
-        name: faker.commerce.productMaterial()
+        name: faker.commerce.productMaterial(),
+        isBlock: faker.datatype.boolean(),
       });
     }
   }
 
-  create(data) {
+  async create(data) {
     const newProduct = {
       id: faker.datatype.uuid(),
       ...data
@@ -27,18 +29,25 @@ class CategoriesService {
     return newProduct;
   }
 
-  find() {
+  async find() {
     return this.category;
   }
 
-  findOne(id) {
-    return this.category.find((item) => item.id === id);
+  async findOne(id) {
+    const categories = this.category.find((item) => item.id === id);
+    if (!categories) {
+      throw boom.notFound('categories not found');
+    }
+    if (categories.isBlock) {
+      throw boom.conflict('product is block');
+    }
+    return categories;
   }
 
-  update(id, changes) {
+  async update(id, changes) {
     const index = this.category.findIndex(item => item.id === id);
     if (index === -1) {
-      throw new Error('Product not found')
+      throw boom.notFound('categories not found');
     }
     const categories = this.category[index];
     // Esta parte es importante para evitar modificar completamente el objeto. (-this.category[index] = change- lo cambiaría por completo)
@@ -49,10 +58,10 @@ class CategoriesService {
     return this.category[index]
   }
 
-  delete(id) {
+  async delete(id) {
     const index = this.category.findIndex(item => item.id === id);
     if (index === -1) {
-      throw new Error('Product not found')
+      throw boom.notFound('categories not found');
     }
     this.category.splice(index, 1);
     return { id };

@@ -1,4 +1,5 @@
 const faker = require('faker');
+const boom = require('@hapi/boom')
 
 // Programación orientada a objetos
 
@@ -18,11 +19,12 @@ class UsersService {
         avatar: faker.image.imageUrl(),
         city: faker.address.cityName(),
         email: faker.internet.email(),
+        isBlock: faker.datatype.boolean(),
       });
     }
   }
 
-  create(data) {
+  async create(data) {
     const newProduct = {
       id: faker.datatype.uuid(),
       ...data
@@ -31,18 +33,25 @@ class UsersService {
     return newProduct;
   }
 
-  find() {
+  async find() {
     return this.users;
   }
 
-  findOne(id) {
-    return this.users.find(item => item.id === id)
+  async findOne(id) {
+    const user = this.users.find(item => item.id === id);
+    if (!user) {
+      throw boom.notFound('user not found');
+    }
+    if (user.isBlock) {
+      throw boom.conflict('product is block');
+    }
+    return user;
   }
 
-  update(id, changes) {
+  async update(id, changes) {
     const index = this.users.findIndex(item => item.id === id);
     if (index === -1) {
-      throw new Error('Product not found')
+      throw boom.notFound('categories not found');
     }
     const user = this.users[index];
     // Esta parte es importante para evitar modificar completamente el objeto. (-this.users[index] = change- lo cambiaría por completo)
@@ -53,10 +62,10 @@ class UsersService {
     return this.users[index]
   }
 
-  delete(id) {
+  async delete(id) {
     const index = this.users.findIndex(item => item.id === id);
     if (index === -1) {
-      throw new Error('Product not found')
+      throw boom.notFound('categories not found');
     }
     this.users.splice(index, 1);
     return { id };
